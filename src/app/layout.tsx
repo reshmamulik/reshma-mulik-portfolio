@@ -14,9 +14,9 @@ const mono = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "Reshma Mulik — Documentary Photographer",
+  title: "Reshma Mulik // Photographer",
   description:
-    "Documentary photography by Reshma Mulik — stories, portraits, and fashion work shot across India.",
+    "Reshma is a documentary photographer showcasing stories, portraits and fashion work.",
 };
 
 export default function RootLayout({
