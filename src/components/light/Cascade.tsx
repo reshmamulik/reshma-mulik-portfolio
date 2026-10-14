@@ -106,6 +106,15 @@ function CascadeTile({ photo, hoverable = true }: { photo: LightPhoto; hoverable
   return (
     <Link
       href={`/projects?row=${encodeURIComponent(row)}&photo=${encodeURIComponent(photoId)}`}
+      // Next.js's <Link> scrolls to the top of the destination page by
+      // default on navigation, which races with (and usually wins
+      // against) the manual scroll-to-row effect in /projects — the
+      // target row briefly flashes into view, then gets reset to 0 once
+      // that stock scroll-to-top kicks in. scroll={false} turns the
+      // built-in behavior off so our own effect is the only thing
+      // moving the scroll position (Reshma, 2026-10-14 — "clicked a
+      // home photo and landed on the wrong project").
+      scroll={false}
       className="relative block h-full w-full"
       aria-label={`View ${photo.alt} in Recent Work`}
     >
