@@ -129,46 +129,45 @@ export default function StorySlideshow({
         &#8249;
       </button>
 
-      {/* This box is always the 7:5 ratio, single photo or diptych, so its
-          height only ever depends on width — never on which slide is
-          showing. That keeps the row height constant as slides change,
-          which is what keeps the arrows locked in place instead of
-          drifting up/down between a single photo and a diptych. It's also
-          the outer bound for a single photo's own box below — its height,
-          and a cap on its width. */}
-      <div className="relative aspect-[7/5] w-full max-w-[66rem]">
+      {/* Below lg: same as always, full column width, height follows
+          from aspect ratio — fine on a stacked mobile layout where the
+          row can simply be taller than one screen.
+
+          At lg+: the box's HEIGHT is fixed (a share of the viewport),
+          not its width. Two things were wrong with the old width-first
+          box (Reshma, 2026-10-15: "on some big screens its not showing
+          correctly" / "its still showing like this" on Rootbound and
+          Fashion, both single verticals):
+          1. A generic aspect-[7/5] reference box rarely matches a real
+             photo's own ratio, so object-contain inside it always left
+             bare page-color gutters on whichever side the photo was
+             narrower than 7:5 — visible as the purple/mint margins in
+             her screenshots. (A wider max-width doesn't fix this —
+             object-contain already renders at the largest size that
+             fits, so a bigger box just moves the same gap around, it
+             doesn't shrink it; confirmed live, see git history.)
+          2. A width-first box derives its height from the column width,
+             which on some screens comes out taller than the row's own
+             available height, so the photo ran off the bottom of the
+             screen instead of being fully visible.
+          Fixing the single photo's box to its OWN real width/height
+          (from light.ts) instead of the generic 7:5 solves #1 — the box
+          shape now matches the photo, so object-contain has no gap left
+          to show. Driving that from a capped, viewport-relative HEIGHT
+          instead of width solves #2 — the box can never be taller than
+          the screen — and also keeps the row's height constant across
+          slides (so the arrows still don't drift), since it no longer
+          depends on which photo's ratio is showing. */}
+      <div
+        className="relative mx-auto aspect-[7/5] w-full max-w-[90rem] lg:h-[62vh] lg:w-auto"
+        style={
+          current.type === "single" && current.photo.width && current.photo.height
+            ? { aspectRatio: `${current.photo.width} / ${current.photo.height}` }
+            : undefined
+        }
+      >
         {current.type === "single" ? (
-          current.photo.width && current.photo.height ? (
-            // A single used to get object-contain'd straight into this
-            // landscape 7:5 box. Fine when a photo happens to be close to
-            // 7:5 itself, but most aren't — a portrait shot left huge bare
-            // gutters on the sides, and even a horizontal one not far off
-            // 7:5 (a 4:3 or so) left a visible strip of bare page color on
-            // each side. That's what Reshma flagged (2026-10-15): "its not
-            // working right in mobile" / "on some big screens its not
-            // showing correctly" — worse the wider the screen, since the
-            // 7:5 box only grows while a mismatched photo's rendered size
-            // stays capped by its own ratio. Sizing this inner box to the
-            // photo's own real aspect ratio (read off the source file, see
-            // width/height on LightPhoto) instead of the generic 7:5 fixes
-            // that for every photo, not just a guessed-at orientation
-            // bucket — height still comes from the outer box so the row
-            // height/arrows don't move, and max-w-full keeps an unusually
-            // wide photo from overflowing it.
-            <div className="flex h-full w-full items-center justify-center">
-              <div
-                className="relative h-full max-w-full"
-                style={{ aspectRatio: `${current.photo.width} / ${current.photo.height}` }}
-              >
-                <PhotoTile photo={current.photo} fit="contain" />
-              </div>
-            </div>
-          ) : (
-            // No real dimensions on this photo (shouldn't happen for a
-            // real photo, but covers a placeholder/future entry) — fall
-            // back to the old fill-the-whole-box behavior.
-            <PhotoTile photo={current.photo} fit="contain" />
-          )
+          <PhotoTile photo={current.photo} fit="contain" />
         ) : (
           <div className="flex h-full w-full gap-3 sm:gap-4">
             <div className="relative h-full flex-1">
