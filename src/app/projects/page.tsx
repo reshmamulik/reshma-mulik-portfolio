@@ -113,9 +113,21 @@ function ProjectRow({
       {...(clone ? { "data-project-clone": true } : { "data-project-section": true })}
       data-row-key={row.key}
       aria-hidden={clone || undefined}
+      // Both columns were self-start (pinned to the top of this min-h-screen
+      // row), which left a slab of bare background below the title/photo on
+      // any row whose content didn't happen to fill a full screen - most
+      // visible right after landing from a home-page cascade link, since
+      // there's no scrolling motion to distract from it (Reshma, 2026-10-15:
+      // "it just should be aligned in center right now there's too much
+      // empty space" / confirmed: "Below the photo, within that row").
+      // self-center on both columns splits that leftover space evenly above
+      // and below instead. The scroll targets below aim at this section's
+      // top edge, not the content itself, so centering the content inside an
+      // unchanged, full-screen-tall section still lands them in the middle
+      // of the viewport rather than pushed to the top.
       className="grid min-h-screen w-full grid-cols-3 pb-10 pt-10 sm:pb-14 sm:pt-14 lg:pb-20 lg:pt-20"
     >
-      <div className="col-start-1 col-end-2 flex flex-col items-start justify-start gap-4 self-start px-6 text-left sm:px-8">
+      <div className="col-start-1 col-end-2 flex flex-col items-start justify-start gap-4 self-center px-6 text-left sm:px-8">
         <div className="w-full text-[2rem] font-thin uppercase tracking-[-0.3px] sm:text-[2.25rem] lg:text-[2.5rem]">
           <span>{row.label}</span>
         </div>
@@ -135,7 +147,7 @@ function ProjectRow({
         ) : null}
       </div>
 
-      <div className="col-span-2 self-start pr-2 sm:pr-3 lg:pr-4">
+      <div className="col-span-2 self-center pr-2 sm:pr-3 lg:pr-4">
         <StorySlideshow photos={row.photos} initialPhotoId={initialPhotoId} />
       </div>
     </section>
