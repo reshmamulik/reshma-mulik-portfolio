@@ -1,0 +1,64 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html,
+body {
+  background-color: #ffffff;
+}
+
+::selection {
+  background: rgba(0, 0, 0, 0.15);
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+}
+::-webkit-scrollbar-track {
+  background: #ffffff;
+}
+::-webkit-scrollbar-thumb {
+  background: #d4d4d4;
+  border-radius: 9999px;
+}
+
+@keyframes twinkle {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes drift {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-300px);
+  }
+}
+
+.stars-layer {
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+}
+
+.stars-small {
+  animation:
+    drift 220s linear infinite,
+    twinkle 4s ease-in-out infinite;
+}
+
+.stars-medium {
+  animation:
+    drift 150s linear infinite reverse,
+    twinkle 6s ease-in-out infinite;
+}
+
+.stars-large {
+  animation: twinkle 3.5s ease-in-out infinite;
+}

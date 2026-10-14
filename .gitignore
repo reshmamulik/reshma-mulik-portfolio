@@ -1,0 +1,46 @@
+# dependencies
+/node_modules
+/.pnp
+.pnp.js
+
+# testing
+/coverage
+
+# next.js
+/.next/
+/out/
+
+# production
+/build
+
+# misc
+.DS_Store
+*.pem
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# local env files
+.env*.local
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+
+# reference material and discarded originals — large, and not served
+# by the site (every live photo is a renamed/curated copy elsewhere under
+# public/light/); excluded 2026-10-14 before the first GitHub push so the
+# repo isn't carrying ~1GB of duplicate camera-original jpgs.
+/reference/
+**/_to_delete/
+**/_previous/
+**/Images to use/
+**/Final Images/
+*.CR3
+*.CR2
+*.NEF
+*.ARW
