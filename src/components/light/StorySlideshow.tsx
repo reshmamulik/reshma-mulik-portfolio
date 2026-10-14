@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
+import FadeImage from "@/components/light/FadeImage";
 import type { LightPhoto } from "@/data/light";
 
 // A slide is either one horizontal (5x7-ish) photo, or a diptych of two
@@ -53,7 +53,7 @@ function buildSlides(photos: LightPhoto[]): Slide[] {
 
 function PhotoTile({ photo, fit = "cover" }: { photo: LightPhoto; fit?: "cover" | "contain" }) {
   return photo.src ? (
-    <Image
+    <FadeImage
       src={photo.src}
       alt={photo.alt}
       fill

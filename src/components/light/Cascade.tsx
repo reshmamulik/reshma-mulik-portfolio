@@ -1,6 +1,6 @@
 "use client";
 
-import Image from "next/image";
+import FadeImage from "@/components/light/FadeImage";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { motion, useScroll, useTransform, easeInOut, type MotionValue } from "framer-motion";
@@ -87,7 +87,7 @@ const HOVER_CLASS = "transition-opacity duration-200 hover:opacity-80";
 // slideshow slot — gets it for free.
 function CascadeTile({ photo, hoverable = true }: { photo: LightPhoto; hoverable?: boolean }) {
   const content = photo.src ? (
-    <Image
+    <FadeImage
       src={photo.src}
       alt={photo.alt}
       fill

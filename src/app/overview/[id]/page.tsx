@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import Image from "next/image";
+import FadeImage from "@/components/light/FadeImage";
 import Link from "next/link";
 import LightNav from "@/components/light/LightNav";
 import { overviewPhotos } from "@/data/light";
@@ -38,7 +38,7 @@ export default function OverviewPhotoPage({
 
       <div className="relative h-full w-full px-16 py-24 sm:px-24 sm:py-28 lg:px-32 lg:py-32">
         <div className="relative mx-auto h-full w-full max-w-5xl">
-          <Image
+          <FadeImage
             src={photo.src}
             alt={photo.alt}
             fill

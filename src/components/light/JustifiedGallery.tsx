@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Image from "next/image";
+import FadeImage from "@/components/light/FadeImage";
 import Link from "next/link";
 import type { OverviewPhoto } from "@/data/light";
 
@@ -137,7 +137,7 @@ export default function JustifiedGallery({ photos }: { photos: OverviewPhoto[] }
                   className="relative block flex-shrink-0"
                   style={{ width: itemWidth, height: row.height }}
                 >
-                  <Image
+                  <FadeImage
                     src={photo.src}
                     alt={photo.alt}
                     fill

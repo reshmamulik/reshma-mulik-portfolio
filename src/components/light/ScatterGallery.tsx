@@ -1,6 +1,6 @@
 "use client";
 
-import Image from "next/image";
+import FadeImage from "@/components/light/FadeImage";
 import { motion } from "framer-motion";
 import type { LightPhoto } from "@/data/light";
 
@@ -30,7 +30,7 @@ export default function ScatterGallery({ photos }: { photos: LightPhoto[] }) {
             className={`relative aspect-[4/5] flex ${layout.width} ${layout.align} ${layout.mt} ${layout.rotate}`}
           >
             {photo.src ? (
-              <Image
+              <FadeImage
                 src={photo.src}
                 alt={photo.alt}
                 fill
