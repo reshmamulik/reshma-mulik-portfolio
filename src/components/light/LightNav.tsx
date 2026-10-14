@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 const ACCENT_HOVER = "hover:text-[#ff3b5c]";
 const DEFAULT_BAR_COLOR = "#f5f5dc";
@@ -15,7 +16,10 @@ const NAV_LINKS = [
   // is the Fashion clone, not Ongoing (Reshma, 2026-10-15: "when i go to
   // recent work it shows fashion. It should show ongoing"). Same fix as
   // the home-page cascade links: scroll:false hands scroll control
-  // entirely to the page's own effect.
+  // entirely to the page's own effect. (That effect only runs on mount,
+  // though — clicking this link while already on /projects is a no-op
+  // navigation, so a click after scrolling down needs its own handler
+  // below; see handleRecentWorkClick.)
   { href: "/projects", label: "Recent Work", scroll: false },
   { href: "/overview", label: "Overview" },
   { href: "/about", label: "About" },
@@ -40,7 +44,28 @@ export default function LightNav({
    * Defaults to that off-white everywhere else. */
   barColor?: string;
 }) {
+  const pathname = usePathname();
   const inactiveColor = variant === "dark" ? "text-white" : "text-black";
+
+  // Clicking "Recent Work" while already on /projects: Next.js treats a
+  // <Link> to the route you're already on as a no-op, so the page's own
+  // mount effect (which scrolls to Ongoing) never runs again and the
+  // click does nothing if she's scrolled down (Reshma, 2026-10-15: "after
+  // someone scrolls down and click on recent work it should scroll back
+  // itself to ongoing"). When that's the case, scroll to the Ongoing
+  // section directly instead of letting the dead navigation happen.
+  function handleNavClick(href: string) {
+    return (e: React.MouseEvent<HTMLAnchorElement>) => {
+      if (href !== "/projects" || pathname !== "/projects") return;
+      const target = document.querySelector(
+        '[data-project-section][data-row-key="ongoing"]',
+      );
+      if (!target) return;
+      e.preventDefault();
+      const top = target.getBoundingClientRect().top + window.scrollY;
+      window.scrollTo(0, top);
+    };
+  }
 
   // No active-page marker (no dot) — 2026-10-13: Reshma tried the
   // markmahaney.com-style dot-before-active-word treatment and asked for
@@ -70,7 +95,7 @@ export default function LightNav({
   const navEl = (
     <nav className="absolute inset-x-1 top-1 z-10 flex items-baseline justify-between text-xs font-medium uppercase tracking-[0.15em] sm:inset-x-4 sm:top-4 sm:text-sm lg:inset-x-6 lg:top-5">
       {NAV_LINKS.map(({ href, label, scroll }) => (
-        <Link key={href} href={href} scroll={scroll} className={linkClass}>
+        <Link key={href} href={href} scroll={scroll} onClick={handleNavClick(href)} className={linkClass}>
           {label}
         </Link>
       ))}
@@ -104,7 +129,7 @@ export default function LightNav({
       ) : (
         <nav className="fixed inset-x-1 top-1 z-40 flex items-baseline justify-between text-xs font-medium uppercase tracking-[0.15em] sm:inset-x-4 sm:top-4 sm:text-sm lg:inset-x-6 lg:top-5">
           {NAV_LINKS.map(({ href, label, scroll }) => (
-            <Link key={href} href={href} scroll={scroll} className={linkClass}>
+            <Link key={href} href={href} scroll={scroll} onClick={handleNavClick(href)} className={linkClass}>
               {label}
             </Link>
           ))}
