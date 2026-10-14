@@ -1170,7 +1170,7 @@ export const about = {
   },
   // Final typed bio copy supplied by Reshma, 2026-10-13.
   paragraphs: [
-    "Drawn to the colours, textures, and rhythms of everyday life, Reshma\u2019s practice explores the search for self, the nuances of human experience, and the ways memory shapes our perception of the world.",
+    "Drawn to the colours, textures and rhythms of everyday life, Reshma\u2019s practice explores the search for self, the nuances of human experience and the ways memory shapes our perception of the world.",
     "Reshma is a documentary photographer based in Mumbai, India. Having grown up in the Western Ghats of Maharashtra, her surroundings have shaped the way she observes and engages with the world. Her practice continues to expand through cross disciplinary collaborations, creating work that feels raw and immersive.",
   ],
   // Added to the About page per Reshma's request, 2026-10-06.

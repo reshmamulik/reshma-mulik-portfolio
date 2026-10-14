@@ -52,20 +52,31 @@ function buildSlides(photos: LightPhoto[]): Slide[] {
 }
 
 function PhotoTile({ photo, fit = "cover" }: { photo: LightPhoto; fit?: "cover" | "contain" }) {
-  return photo.src ? (
-    <FadeImage
-      src={photo.src}
-      alt={photo.alt}
-      fill
-      sizes="60vw"
-      className={fit === "contain" ? "object-contain" : "object-cover"}
-      style={photo.objectPosition ? { objectPosition: photo.objectPosition } : undefined}
-    />
-  ) : (
+  // Wrapped in its own gradient-filled box (the same placeholderFrom/To
+  // used for a missing photo) instead of handing FadeImage a bare parent,
+  // so a cold-loading image has something to fade in OVER rather than a
+  // blank gap the size of the frame — on a slow/first load that blank gap
+  // sat there long enough to read as broken (Reshma, 2026-10-15: "when i
+  // start scrolling first sec on recent work - there is some glitch" /
+  // confirmed it was the Ongoing photo staying blank before it faded in).
+  return (
     <div
-      className={`flex h-full w-full items-center justify-center bg-gradient-to-br ${photo.placeholderFrom} ${photo.placeholderTo} text-xs text-black/40`}
+      className={`relative h-full w-full overflow-hidden bg-gradient-to-br ${photo.placeholderFrom} ${photo.placeholderTo}`}
     >
-      Add photo
+      {photo.src ? (
+        <FadeImage
+          src={photo.src}
+          alt={photo.alt}
+          fill
+          sizes="60vw"
+          className={fit === "contain" ? "object-contain" : "object-cover"}
+          style={photo.objectPosition ? { objectPosition: photo.objectPosition } : undefined}
+        />
+      ) : (
+        <div className="flex h-full w-full items-center justify-center text-xs text-black/40">
+          Add photo
+        </div>
+      )}
     </div>
   );
 }
