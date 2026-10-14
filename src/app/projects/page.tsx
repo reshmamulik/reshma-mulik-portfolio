@@ -125,9 +125,17 @@ function ProjectRow({
       // top edge, not the content itself, so centering the content inside an
       // unchanged, full-screen-tall section still lands them in the middle
       // of the viewport rather than pushed to the top.
-      className="grid min-h-screen w-full grid-cols-3 pb-10 pt-10 sm:pb-14 sm:pt-14 lg:pb-20 lg:pt-20"
+      //
+      // grid-cols-3 used to apply at every width, which on a phone squeezed
+      // the title/essay into a ~1/3-width sliver beside an equally squeezed
+      // photo - unreadable and the photo far too small (Reshma, 2026-10-15:
+      // "make the site mobile friendly too - its not working right in
+      // mobile"). Below lg it's a single stacked column (title/essay, then
+      // the photo, full width); the 3-column side-by-side layout only
+      // kicks in at lg and up, where there's room for it.
+      className="grid min-h-screen w-full grid-cols-1 gap-y-8 pb-10 pt-10 sm:gap-y-10 sm:pb-14 sm:pt-14 lg:grid-cols-3 lg:gap-y-0 lg:pb-20 lg:pt-20"
     >
-      <div className="col-start-1 col-end-2 flex flex-col items-start justify-start gap-4 self-center px-6 text-left sm:px-8">
+      <div className="flex flex-col items-start justify-start gap-4 self-center px-6 text-left sm:px-8 lg:col-start-1 lg:col-end-2">
         <div className="w-full text-[2rem] font-thin uppercase tracking-[-0.3px] sm:text-[2.25rem] lg:text-[2.5rem]">
           <span>{row.label}</span>
         </div>
@@ -147,7 +155,14 @@ function ProjectRow({
         ) : null}
       </div>
 
-      <div className="col-span-2 self-center pr-2 sm:pr-3 lg:pr-4">
+      {/* Symmetric left/right padding while stacked (matching the title
+          block's own px-6/sm:px-8 above it) so the photo doesn't sit flush
+          against the screen edge on one side only; back to the old
+          right-only padding at lg, where the title column's own padding
+          already provides the gap between it and the photo. gap-y on the
+          section above (not padding here) is what spaces this block from
+          the title/essay above it when stacked. */}
+      <div className="self-center px-6 sm:px-8 lg:col-span-2 lg:px-0 lg:pr-4">
         <StorySlideshow photos={row.photos} initialPhotoId={initialPhotoId} />
       </div>
     </section>
