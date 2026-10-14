@@ -7,7 +7,16 @@ const DEFAULT_BAR_COLOR = "#f5f5dc";
 
 const NAV_LINKS = [
   { href: "/", label: "Reshma Mulik" },
-  { href: "/projects", label: "Recent Work" },
+  // Recent Work does its own scroll-to-"Ongoing" positioning on mount
+  // (see src/app/projects/page.tsx) via an infinite-loop layout with a
+  // clone of the LAST project (Fashion) sitting before the real content.
+  // Next.js's default scroll-to-top-on-navigate was racing that effect
+  // and winning, landing the page at the very top of the document — which
+  // is the Fashion clone, not Ongoing (Reshma, 2026-10-15: "when i go to
+  // recent work it shows fashion. It should show ongoing"). Same fix as
+  // the home-page cascade links: scroll:false hands scroll control
+  // entirely to the page's own effect.
+  { href: "/projects", label: "Recent Work", scroll: false },
   { href: "/overview", label: "Overview" },
   { href: "/about", label: "About" },
 ];
@@ -60,8 +69,8 @@ export default function LightNav({
 
   const navEl = (
     <nav className="absolute inset-x-1 top-1 z-10 flex items-baseline justify-between text-xs font-medium uppercase tracking-[0.15em] sm:inset-x-4 sm:top-4 sm:text-sm lg:inset-x-6 lg:top-5">
-      {NAV_LINKS.map(({ href, label }) => (
-        <Link key={href} href={href} className={linkClass}>
+      {NAV_LINKS.map(({ href, label, scroll }) => (
+        <Link key={href} href={href} scroll={scroll} className={linkClass}>
           {label}
         </Link>
       ))}
@@ -94,8 +103,8 @@ export default function LightNav({
         </div>
       ) : (
         <nav className="fixed inset-x-1 top-1 z-40 flex items-baseline justify-between text-xs font-medium uppercase tracking-[0.15em] sm:inset-x-4 sm:top-4 sm:text-sm lg:inset-x-6 lg:top-5">
-          {NAV_LINKS.map(({ href, label }) => (
-            <Link key={href} href={href} className={linkClass}>
+          {NAV_LINKS.map(({ href, label, scroll }) => (
+            <Link key={href} href={href} scroll={scroll} className={linkClass}>
               {label}
             </Link>
           ))}

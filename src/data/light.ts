@@ -1044,8 +1044,8 @@ export function getStory(slug: string) {
 export const cascadePhotos: LightPhoto[] = [
   { id: "cs-01", alt: "Cascade photograph 1", src: "/light/home/01.jpg", placeholderFrom: "from-amber-200", placeholderTo: "to-rose-400", linkToProject: { row: "ahilya-fort", photoId: "ahilya-fort-01" } },
   { id: "cs-02", alt: "Cascade photograph 2", src: "/light/home/02.jpg", placeholderFrom: "from-teal-300", placeholderTo: "to-teal-700", linkToProject: { row: "hostel", photoId: "hostel-09" } },
-  { id: "cs-03", alt: "Cascade photograph 3", src: "/light/home/03.jpg", placeholderFrom: "from-red-300", placeholderTo: "to-red-700" },
-  { id: "cs-04", alt: "Cascade photograph 4", src: "/light/home/04.jpg", placeholderFrom: "from-neutral-500", placeholderTo: "to-neutral-900" },
+  { id: "cs-03", alt: "Cascade photograph 3", src: "/light/home/03.jpg", placeholderFrom: "from-red-300", placeholderTo: "to-red-700", linkToProject: { row: "ongoing", photoId: "ongoing-03" } },
+  { id: "cs-04", alt: "Cascade photograph 4", src: "/light/home/04.jpg", placeholderFrom: "from-neutral-500", placeholderTo: "to-neutral-900", linkToProject: { row: "rootbound", photoId: "rootbound-02" } },
   { id: "cs-05", alt: "Cascade photograph 5", src: "/light/home/05.jpg", placeholderFrom: "from-yellow-200", placeholderTo: "to-yellow-500", linkToProject: { row: "ongoing", photoId: "ongoing-09" } },
   { id: "cs-06", alt: "Cascade photograph 6", src: "/light/home/06.jpg", placeholderFrom: "from-purple-300", placeholderTo: "to-purple-800", linkToProject: { row: "ongoing", photoId: "ongoing-05" } },
   { id: "cs-07", alt: "Cascade photograph 7", src: "/light/home/07.jpg", placeholderFrom: "from-orange-200", placeholderTo: "to-rose-300", linkToProject: { row: "ongoing", photoId: "ongoing-10" } },
