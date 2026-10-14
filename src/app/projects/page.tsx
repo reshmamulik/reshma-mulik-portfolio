@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useRef } from "react";
+import { Suspense, useEffect, useLayoutEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import LightNav from "@/components/light/LightNav";
 import ScrollBackground from "@/components/light/ScrollBackground";
@@ -142,7 +142,7 @@ function ProjectRow({
   );
 }
 
-export default function ProjectsPage() {
+function ProjectsPageInner() {
   const rows = buildRows();
   // Set when arriving from a home-page cascade photo that is also
   // featured in a specific project (Reshma, 2026-10-14) — ?row is a Row
@@ -272,5 +272,13 @@ export default function ProjectsPage() {
         </div>
       </div>
     </main>
+  );
+}
+
+export default function ProjectsPage() {
+  return (
+    <Suspense fallback={null}>
+      <ProjectsPageInner />
+    </Suspense>
   );
 }
