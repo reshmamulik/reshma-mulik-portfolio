@@ -249,19 +249,33 @@ function ProjectsPageInner() {
   }, []);
 
   useEffect(() => {
-    // The page lands only ~2% of a screen height above contentTop (see the
-    // mount effect above), so with no slack here, an ordinary small
-    // upward wiggle right after landing — trackpad overshoot, a bit of
-    // scroll momentum bouncing back — immediately crossed below
-    // contentTop and fired the wrap, teleporting all the way around the
-    // loop. That was the glitch Reshma saw right at the start of
-    // scrolling on Ongoing (2026-10-16: "the glitch at the beginning of
-    // scroll with ongoing"). Only wrapping once the scroll has gone a
-    // real distance (not a sliver) past either edge keeps the loop from
-    // firing on that kind of small, ordinary jitter near the boundary —
-    // it still wraps the moment you've genuinely scrolled into a clone.
+    // Two separate problems here, fixed together:
+    //
+    // 1. With no slack, an ordinary small upward wiggle right after
+    //    landing — trackpad overshoot, a bit of scroll momentum bouncing
+    //    back — immediately crossed below contentTop and fired the wrap,
+    //    teleporting all the way around the loop (2026-10-16: "the
+    //    glitch at the beginning of scroll with ongoing"). WRAP_BUFFER_PX
+    //    means it only wraps once scroll has gone a real distance past
+    //    either edge, not from a sliver of jitter right at the boundary.
+    //
+    // 2. That still wasn't enough on its own — correcting on every single
+    //    scroll event, including while a trackpad swipe (or its
+    //    momentum) was still actively in progress, fights the browser's
+    //    own momentum scrolling: the position jumps out from under a
+    //    live gesture, and the browser is left confused about where that
+    //    gesture's remaining momentum should go. That showed up as the
+    //    page simply not responding to scrolling afterwards (Reshma,
+    //    2026-10-16: "if i go to recent work and go up first a little
+    //    and then down then its not going down"). Debouncing the
+    //    correction so it only runs once scrolling has actually stopped
+    //    (no new scroll events for 150ms) means it never fires while a
+    //    gesture is still live — the jump only ever happens in the quiet
+    //    gap between gestures, when there's nothing to fight.
     const WRAP_BUFFER_PX = 150;
-    function onScroll() {
+    let settleTimer: ReturnType<typeof setTimeout> | null = null;
+
+    function correctIfNeeded() {
       const content = contentRef.current;
       const endClone = endCloneRef.current;
       if (!content || !endClone) return;
@@ -275,8 +289,17 @@ function ProjectsPageInner() {
         window.scrollTo(0, window.scrollY + loopHeight);
       }
     }
+
+    function onScroll() {
+      if (settleTimer) clearTimeout(settleTimer);
+      settleTimer = setTimeout(correctIfNeeded, 150);
+    }
+
     window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      if (settleTimer) clearTimeout(settleTimer);
+    };
   }, []);
 
   return (
