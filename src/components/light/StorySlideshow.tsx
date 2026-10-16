@@ -183,13 +183,13 @@ export default function StorySlideshow({
         type="button"
         onClick={goPrev}
         aria-label="Previous"
-        className="absolute inset-y-0 left-0 z-20 w-1/2 cursor-ew-resize"
+        className="absolute inset-y-0 left-0 z-20 w-1/2 cursor-ew-resize outline-none"
       />
       <button
         type="button"
         onClick={goNext}
         aria-label="Next"
-        className="absolute inset-y-0 right-0 z-20 w-1/2 cursor-ew-resize"
+        className="absolute inset-y-0 right-0 z-20 w-1/2 cursor-ew-resize outline-none"
       />
     </div>
   );
