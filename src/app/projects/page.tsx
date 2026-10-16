@@ -120,11 +120,16 @@ function ProjectRow({
       // there's no scrolling motion to distract from it (Reshma, 2026-10-15:
       // "it just should be aligned in center right now there's too much
       // empty space" / confirmed: "Below the photo, within that row").
-      // self-center on both columns splits that leftover space evenly above
-      // and below instead. The scroll targets below aim at this section's
-      // top edge, not the content itself, so centering the content inside an
-      // unchanged, full-screen-tall section still lands them in the middle
-      // of the viewport rather than pushed to the top.
+      // self-center on the photo column splits that leftover space evenly
+      // above and below instead. The scroll targets below aim at this
+      // section's top edge, not the content itself, so centering the photo
+      // inside an unchanged, full-screen-tall section still lands it in the
+      // middle of the viewport rather than pushed to the top.
+      //
+      // The title column went back to self-start (Reshma, 2026-10-16:
+      // "ongoing should be aligned at the top of the image") — so the title
+      // sits level with the photo's own top edge instead of floating at
+      // the row's vertical middle, while the photo itself stays centered.
       //
       // grid-cols-3 used to apply at every width, which on a phone squeezed
       // the title/essay into a ~1/3-width sliver beside an equally squeezed
@@ -135,7 +140,7 @@ function ProjectRow({
       // kicks in at lg and up, where there's room for it.
       className="grid min-h-screen w-full grid-cols-1 gap-y-8 pb-10 pt-10 sm:gap-y-10 sm:pb-14 sm:pt-14 lg:grid-cols-3 lg:gap-y-0 lg:pb-20 lg:pt-20"
     >
-      <div className="flex flex-col items-start justify-start gap-4 self-center px-6 text-left sm:px-8 lg:col-start-1 lg:col-end-2">
+      <div className="flex flex-col items-start justify-start gap-4 self-start px-6 text-left sm:px-8 lg:col-start-1 lg:col-end-2">
         <div className="w-full text-[2rem] font-thin uppercase tracking-[-0.3px] sm:text-[2.25rem] lg:text-[2.5rem]">
           <span>{row.label}</span>
         </div>
@@ -233,6 +238,18 @@ function ProjectsPageInner() {
   }, []);
 
   useEffect(() => {
+    // The page lands only ~2% of a screen height above contentTop (see the
+    // mount effect above), so with no slack here, an ordinary small
+    // upward wiggle right after landing — trackpad overshoot, a bit of
+    // scroll momentum bouncing back — immediately crossed below
+    // contentTop and fired the wrap, teleporting all the way around the
+    // loop. That was the glitch Reshma saw right at the start of
+    // scrolling on Ongoing (2026-10-16: "the glitch at the beginning of
+    // scroll with ongoing"). Only wrapping once the scroll has gone a
+    // real distance (not a sliver) past either edge keeps the loop from
+    // firing on that kind of small, ordinary jitter near the boundary —
+    // it still wraps the moment you've genuinely scrolled into a clone.
+    const WRAP_BUFFER_PX = 150;
     function onScroll() {
       const content = contentRef.current;
       const endClone = endCloneRef.current;
@@ -241,9 +258,9 @@ function ProjectsPageInner() {
       const endCloneTop = docTop(endClone);
       const loopHeight = endCloneTop - contentTop;
       if (loopHeight <= 0) return;
-      if (window.scrollY >= endCloneTop) {
+      if (window.scrollY >= endCloneTop + WRAP_BUFFER_PX) {
         window.scrollTo(0, window.scrollY - loopHeight);
-      } else if (window.scrollY < contentTop) {
+      } else if (window.scrollY < contentTop - WRAP_BUFFER_PX) {
         window.scrollTo(0, window.scrollY + loopHeight);
       }
     }

@@ -120,11 +120,15 @@ export default function StorySlideshow({
     // single-photo page (Reshma, 2026-10-13 there: "wanted the prev/next
     // arrows replaced by a cursor hint instead"; 2026-10-16 here: "remove
     // current arrows from recent work and use the arrow from overview to
-    // recent work"). The whole photo is one click target split invisibly
-    // in half, with the plain native double-headed resize cursor as the
-    // only hint, instead of a custom icon.
-
-    /* Below lg: same as always, full column width, height follows
+    // recent work"). The click zones (and the cursor hint) span this
+    // whole outer area — the full column, not just the photo's own
+    // pixels — same as Overview's full-page click zones (Reshma,
+    // 2026-10-16: "if you see overview for full page the cursor acts as
+    // an arrow, do the same for recent work"), so the dead space beside a
+    // narrower (e.g. portrait) photo still steps the slideshow instead of
+    // only the image itself responding.
+    <div className="relative mx-auto flex w-full max-w-[90rem] items-center justify-center lg:h-[calc(100vh-11rem)]">
+      {/* Below lg: same as always, full column width, height follows
           from aspect ratio — fine on a stacked mobile layout where the
           row can simply be taller than one screen.
 
@@ -152,27 +156,28 @@ export default function StorySlideshow({
           instead of width solves #2 — the box can never be taller than
           the screen — and also keeps the row's height constant across
           slides (so the arrows still don't drift), since it no longer
-          depends on which photo's ratio is showing. */
-    <div
-      className="relative mx-auto aspect-[7/5] w-full max-w-[90rem] lg:h-[calc(100vh-11rem)] lg:w-auto"
-      style={
-        current.type === "single" && current.photo.width && current.photo.height
-          ? { aspectRatio: `${current.photo.width} / ${current.photo.height}` }
-          : undefined
-      }
-    >
-      {current.type === "single" ? (
-        <PhotoTile photo={current.photo} fit="contain" />
-      ) : (
-        <div className="flex h-full w-full gap-3 sm:gap-4">
-          <div className="relative h-full flex-1">
-            <PhotoTile photo={current.photos[0]} />
+          depends on which photo's ratio is showing. */}
+      <div
+        className="relative aspect-[7/5] w-full lg:h-full lg:w-auto"
+        style={
+          current.type === "single" && current.photo.width && current.photo.height
+            ? { aspectRatio: `${current.photo.width} / ${current.photo.height}` }
+            : undefined
+        }
+      >
+        {current.type === "single" ? (
+          <PhotoTile photo={current.photo} fit="contain" />
+        ) : (
+          <div className="flex h-full w-full gap-3 sm:gap-4">
+            <div className="relative h-full flex-1">
+              <PhotoTile photo={current.photos[0]} />
+            </div>
+            <div className="relative h-full flex-1">
+              <PhotoTile photo={current.photos[1]} />
+            </div>
           </div>
-          <div className="relative h-full flex-1">
-            <PhotoTile photo={current.photos[1]} />
-          </div>
-        </div>
-      )}
+        )}
+      </div>
 
       <button
         type="button"
