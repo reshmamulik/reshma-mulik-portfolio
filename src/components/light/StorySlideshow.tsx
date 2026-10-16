@@ -159,7 +159,7 @@ export default function StorySlideshow({
           slides (so the arrows still don't drift), since it no longer
           depends on which photo's ratio is showing. */}
       <div
-        className="relative mx-auto aspect-[7/5] w-full max-w-[90rem] lg:h-[62vh] lg:w-auto"
+        className="relative mx-auto aspect-[7/5] w-full max-w-[90rem] lg:h-[calc(100vh-11rem)] lg:w-auto"
         style={
           current.type === "single" && current.photo.width && current.photo.height
             ? { aspectRatio: `${current.photo.width} / ${current.photo.height}` }
