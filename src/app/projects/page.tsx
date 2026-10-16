@@ -113,7 +113,7 @@ function ProjectRow({
       {...(clone ? { "data-project-clone": true } : { "data-project-section": true })}
       data-row-key={row.key}
       aria-hidden={clone || undefined}
-      // Both columns were self-start (pinned to the top of this min-h-screen
+      // Both columns were self-start (pinned to the top of this lg:min-h-screen
       // row), which left a slab of bare background below the title/photo on
       // any row whose content didn't happen to fill a full screen - most
       // visible right after landing from a home-page cascade link, since
@@ -138,7 +138,17 @@ function ProjectRow({
       // mobile"). Below lg it's a single stacked column (title/essay, then
       // the photo, full width); the 3-column side-by-side layout only
       // kicks in at lg and up, where there's room for it.
-      className="grid min-h-screen w-full grid-cols-1 gap-y-8 pb-10 pt-10 sm:gap-y-10 sm:pb-14 sm:pt-14 lg:grid-cols-3 lg:gap-y-0 lg:pb-20 lg:pt-20"
+      //
+      // min-h-screen used to apply at every width too, which forced each
+      // stacked mobile row to be a full screen tall even when its title has
+      // no intro text (e.g. Fashion) - leaving a large blank gap between
+      // the short title block and the photo further down (Reshma,
+      // 2026-10-16: "make sure you remove the empty space in between
+      // projects"). Now the forced full-screen height only kicks in at lg,
+      // where the fixed row height is what keeps the side-by-side layout
+      // and the arrow click-zones aligned; below lg the row is simply as
+      // tall as its own stacked content.
+      className="grid w-full grid-cols-1 gap-y-8 pb-10 pt-10 sm:gap-y-10 sm:pb-14 sm:pt-14 lg:min-h-screen lg:grid-cols-3 lg:gap-y-0 lg:pb-20 lg:pt-20"
     >
       <div className="flex flex-col items-start justify-start gap-4 self-start px-6 text-left sm:px-8 lg:col-start-1 lg:col-end-2">
         <div className="w-full text-[2rem] font-thin uppercase tracking-[-0.3px] sm:text-[2.25rem] lg:text-[2.5rem]">

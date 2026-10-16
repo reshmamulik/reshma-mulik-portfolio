@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 
 const ACCENT_HOVER = "hover:text-[#ff3b5c]";
 const DEFAULT_BAR_COLOR = "#f5f5dc";
@@ -46,6 +47,26 @@ export default function LightNav({
 }) {
   const pathname = usePathname();
   const inactiveColor = variant === "dark" ? "text-white" : "text-black";
+
+  // On mobile, "Reshma Mulik" goes to the Overview page instead of the
+  // home page (Reshma, 2026-10-16: "Instead of home page connect overview
+  // page to reshma mulik" — mobile-only, site-wide, since the home page's
+  // mobile layout becomes a plain nav screen with no photos of its own,
+  // see src/app/page.tsx). Starts false (desktop) so server-rendered and
+  // first-paint markup match; flips after mount once we know the real
+  // viewport, same `lg` breakpoint Recent Work's layout already uses.
+  const [isMobileHome, setIsMobileHome] = useState(false);
+  useEffect(() => {
+    const query = window.matchMedia("(max-width: 1023px)");
+    setIsMobileHome(query.matches);
+    const handleChange = (e: MediaQueryListEvent) => setIsMobileHome(e.matches);
+    query.addEventListener("change", handleChange);
+    return () => query.removeEventListener("change", handleChange);
+  }, []);
+
+  function hrefFor(href: string) {
+    return href === "/" && isMobileHome ? "/overview" : href;
+  }
 
   // Clicking "Recent Work" while already on /projects: Next.js treats a
   // <Link> to the route you're already on as a no-op, so the page's own
@@ -95,7 +116,7 @@ export default function LightNav({
   const navEl = (
     <nav className="absolute inset-x-1 top-1 z-10 flex items-baseline justify-between text-xs font-medium uppercase tracking-[0.15em] sm:inset-x-4 sm:top-4 sm:text-sm lg:inset-x-6 lg:top-5">
       {NAV_LINKS.map(({ href, label, scroll }) => (
-        <Link key={href} href={href} scroll={scroll} onClick={handleNavClick(href)} className={linkClass}>
+        <Link key={href} href={hrefFor(href)} scroll={scroll} onClick={handleNavClick(href)} className={linkClass}>
           {label}
         </Link>
       ))}
@@ -129,7 +150,7 @@ export default function LightNav({
       ) : (
         <nav className="fixed inset-x-1 top-1 z-40 flex items-baseline justify-between text-xs font-medium uppercase tracking-[0.15em] sm:inset-x-4 sm:top-4 sm:text-sm lg:inset-x-6 lg:top-5">
           {NAV_LINKS.map(({ href, label, scroll }) => (
-            <Link key={href} href={href} scroll={scroll} onClick={handleNavClick(href)} className={linkClass}>
+            <Link key={href} href={hrefFor(href)} scroll={scroll} onClick={handleNavClick(href)} className={linkClass}>
               {label}
             </Link>
           ))}

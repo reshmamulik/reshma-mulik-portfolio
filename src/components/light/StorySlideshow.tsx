@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import FadeImage from "@/components/light/FadeImage";
 import type { LightPhoto } from "@/data/light";
 
@@ -113,6 +113,34 @@ export default function StorySlideshow({
     setIndex((i) => (i + 1) % slides.length);
   }
 
+  // Touch swipe, alongside the existing tap zones below (Reshma,
+  // 2026-10-16, mobile-only request: "make sure people can swipe or tap
+  // to see the next image"). A horizontal swipe past SWIPE_THRESHOLD_PX
+  // steps the slideshow; anything shorter, or more vertical than
+  // horizontal, is left alone so an ordinary page scroll on a touch
+  // device isn't hijacked into a slide change.
+  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
+  const SWIPE_THRESHOLD_PX = 40;
+
+  function handleTouchStart(e: React.TouchEvent) {
+    const touch = e.touches[0];
+    touchStartRef.current = { x: touch.clientX, y: touch.clientY };
+  }
+  function handleTouchEnd(e: React.TouchEvent) {
+    const start = touchStartRef.current;
+    touchStartRef.current = null;
+    if (!start) return;
+    const touch = e.changedTouches[0];
+    const dx = touch.clientX - start.x;
+    const dy = touch.clientY - start.y;
+    if (Math.abs(dx) < SWIPE_THRESHOLD_PX || Math.abs(dx) < Math.abs(dy)) return;
+    if (dx < 0) {
+      goNext();
+    } else {
+      goPrev();
+    }
+  }
+
   if (!current) return null;
 
   return (
@@ -127,7 +155,11 @@ export default function StorySlideshow({
     // an arrow, do the same for recent work"), so the dead space beside a
     // narrower (e.g. portrait) photo still steps the slideshow instead of
     // only the image itself responding.
-    <div className="relative mx-auto flex w-full max-w-[90rem] items-center justify-center lg:h-[calc(100vh-11rem)]">
+    <div
+      className="relative mx-auto flex w-full max-w-[90rem] items-center justify-center lg:h-[calc(100vh-11rem)]"
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+    >
       {/* Below lg: same as always, full column width, height follows
           from aspect ratio — fine on a stacked mobile layout where the
           row can simply be taller than one screen.
