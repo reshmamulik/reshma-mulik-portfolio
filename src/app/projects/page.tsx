@@ -230,10 +230,21 @@ function ProjectsPageInner() {
 
     // Land on the real first project on load, skipping past the leading
     // clone (a duplicate of the last project) that sits above it in the
-    // document. Nudged 2% of the viewport height higher than Ongoing's
-    // exact top (Reshma, 2026-10-14), so the landing position sits just
-    // slightly above a dead-on alignment with the first row.
-    window.scrollTo(0, docTop(content) - window.innerHeight * 0.02);
+    // document. This used to target `content` itself and nudge 2% of the
+    // viewport height higher (Reshma, 2026-10-14), but `content` is the
+    // wrapper that also carries the nav's own top clearance padding
+    // (pt-[88px]/lg:pt-20) — its top sits ~80-90px ABOVE Ongoing's actual
+    // section, not at it. Combined with the nudge, landing was ~100px
+    // above a true alignment, which pushed Ongoing's photo down inside
+    // the viewport by that same amount and ran its bottom off-screen on
+    // open (Reshma, 2026-10-16: "recent work opens like this" / "it
+    // should open like this - see the placement" — full photo visible,
+    // nothing cut off). Targeting the real first row's own section lands
+    // exactly on it, same as the Recent Work nav link already does.
+    const ongoingSection = content.querySelector("[data-project-section]");
+    if (ongoingSection) {
+      window.scrollTo(0, docTop(ongoingSection as HTMLElement));
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
