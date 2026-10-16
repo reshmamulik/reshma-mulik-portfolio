@@ -116,20 +116,15 @@ export default function StorySlideshow({
   if (!current) return null;
 
   return (
-    // Arrows are laid out as normal flex siblings right beside the image
-    // (not absolutely positioned over it), so they always sit just outside
-    // its edges with a small, consistent gap — never on top of the photo.
-    <div className="relative flex h-full w-full items-center justify-center gap-2 sm:gap-3">
-      <button
-        type="button"
-        onClick={goPrev}
-        aria-label="Previous"
-        className="z-10 shrink-0 text-3xl transition hover:opacity-60"
-      >
-        &#8249;
-      </button>
+    // No visible prev/next buttons — same treatment as the Overview
+    // single-photo page (Reshma, 2026-10-13 there: "wanted the prev/next
+    // arrows replaced by a cursor hint instead"; 2026-10-16 here: "remove
+    // current arrows from recent work and use the arrow from overview to
+    // recent work"). The whole photo is one click target split invisibly
+    // in half, with the plain native double-headed resize cursor as the
+    // only hint, instead of a custom icon.
 
-      {/* Below lg: same as always, full column width, height follows
+    /* Below lg: same as always, full column width, height follows
           from aspect ratio — fine on a stacked mobile layout where the
           row can simply be taller than one screen.
 
@@ -157,37 +152,40 @@ export default function StorySlideshow({
           instead of width solves #2 — the box can never be taller than
           the screen — and also keeps the row's height constant across
           slides (so the arrows still don't drift), since it no longer
-          depends on which photo's ratio is showing. */}
-      <div
-        className="relative mx-auto aspect-[7/5] w-full max-w-[90rem] lg:h-[calc(100vh-11rem)] lg:w-auto"
-        style={
-          current.type === "single" && current.photo.width && current.photo.height
-            ? { aspectRatio: `${current.photo.width} / ${current.photo.height}` }
-            : undefined
-        }
-      >
-        {current.type === "single" ? (
-          <PhotoTile photo={current.photo} fit="contain" />
-        ) : (
-          <div className="flex h-full w-full gap-3 sm:gap-4">
-            <div className="relative h-full flex-1">
-              <PhotoTile photo={current.photos[0]} />
-            </div>
-            <div className="relative h-full flex-1">
-              <PhotoTile photo={current.photos[1]} />
-            </div>
+          depends on which photo's ratio is showing. */
+    <div
+      className="relative mx-auto aspect-[7/5] w-full max-w-[90rem] lg:h-[calc(100vh-11rem)] lg:w-auto"
+      style={
+        current.type === "single" && current.photo.width && current.photo.height
+          ? { aspectRatio: `${current.photo.width} / ${current.photo.height}` }
+          : undefined
+      }
+    >
+      {current.type === "single" ? (
+        <PhotoTile photo={current.photo} fit="contain" />
+      ) : (
+        <div className="flex h-full w-full gap-3 sm:gap-4">
+          <div className="relative h-full flex-1">
+            <PhotoTile photo={current.photos[0]} />
           </div>
-        )}
-      </div>
+          <div className="relative h-full flex-1">
+            <PhotoTile photo={current.photos[1]} />
+          </div>
+        </div>
+      )}
 
+      <button
+        type="button"
+        onClick={goPrev}
+        aria-label="Previous"
+        className="absolute inset-y-0 left-0 z-20 w-1/2 cursor-ew-resize"
+      />
       <button
         type="button"
         onClick={goNext}
         aria-label="Next"
-        className="z-10 shrink-0 text-3xl transition hover:opacity-60"
-      >
-        &#8250;
-      </button>
+        className="absolute inset-y-0 right-0 z-20 w-1/2 cursor-ew-resize"
+      />
     </div>
   );
 }
