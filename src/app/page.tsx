@@ -6,19 +6,19 @@ import { cascadePhotos, cascadeSlideshowPhotos } from "@/data/light";
 export default function HomePage() {
   return (
     <main className="relative min-h-screen w-full">
-      {/* Mobile landing (below lg): a plain 4-corner nav, no photos — Reshma,
-          2026-10-16: "On landing page you'll see Reshma Mulik on left hand
-          side, Recent Work on right hand side, on bottom left instagram as
-          it is and bottom right about." Desktop keeps the full scroll-driven
-          cascade with the usual top nav, completely unchanged below. */}
+      {/* Mobile landing (below lg): the 4-corner nav overlaid on top of
+          Cascade's own mobile swipe row (Reshma, 2026-10-16: "Reshma Mulik
+          on left hand side, Recent Work on right hand side..."; 2026-10-21:
+          "bring back photos on mobile landing" alongside those links).
+          Desktop keeps the full scroll-driven cascade with the usual top
+          nav, completely unchanged below — Cascade itself picks desktop vs
+          mobile internally now, same `lg` cutoff as everything else here. */}
       <MobileHomeNav />
 
       <div className="hidden lg:contents">
         <LightNav variant="light" />
       </div>
-      <div className="hidden lg:block">
-        <Cascade photos={cascadePhotos} slideshowPhotos={cascadeSlideshowPhotos} />
-      </div>
+      <Cascade photos={cascadePhotos} slideshowPhotos={cascadeSlideshowPhotos} />
     </main>
   );
 }

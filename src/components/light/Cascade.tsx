@@ -248,7 +248,11 @@ export default function Cascade({ photos, slideshowPhotos }: { photos: LightPhot
 
   return (
     <>
-      <section ref={sectionRef} className="relative hidden sm:block" style={{ height: `${sectionHeightVh}vh` }}>
+      {/* Desktop-only full cascade (Reshma, 2026-10-16/21: the `lg` cutoff
+          the rest of the mobile work this session uses, not the old `sm`
+          one — below `lg` the simple swipe row right below takes over
+          instead, alongside the 4-corner mobile nav from page.tsx). */}
+      <section ref={sectionRef} className="relative hidden lg:block" style={{ height: `${sectionHeightVh}vh` }}>
         <div className="sticky top-0 flex h-screen w-full items-center overflow-hidden" style={{ paddingLeft: sideMargin, paddingRight: sideMargin }}>
           <div className="relative h-full" style={{ width: stackWidth }}>
             {photos.map((photo, i) =>
@@ -276,7 +280,15 @@ export default function Cascade({ photos, slideshowPhotos }: { photos: LightPhot
         </div>
       </section>
 
-      <div className="flex h-screen snap-x snap-mandatory items-center gap-3 overflow-x-auto px-4 sm:hidden">
+      {/* Mobile landing photos (Reshma, 2026-10-21: "bring back photos on
+          mobile landing... smooth out its scroll animation") — a plain
+          horizontal swipe row instead of the scroll-driven desktop cascade
+          (that one leans on Framer Motion tied to vertical page scroll,
+          which doesn't translate to a touch swipe gesture). Native
+          scroll-snap plus explicit momentum/overscroll handling keeps the
+          swipe itself smooth without any JS driving it. Sits underneath
+          the fixed 4-corner nav from MobileHomeNav.tsx. */}
+      <div className="flex h-screen snap-x snap-mandatory items-center gap-3 overflow-x-auto overscroll-x-contain px-4 [-webkit-overflow-scrolling:touch] lg:hidden">
         {photos.map((photo, i) => (
           <div key={photo.id} className="relative h-[60vh] aspect-[3/4] shrink-0 snap-center">
             {i === photos.length - 1 && slideshowPhotos && slideshowPhotos.length > 0 ? (
