@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import FadeImage from "@/components/light/FadeImage";
 import type { LightPhoto } from "@/data/light";
 
@@ -10,9 +10,16 @@ type Slide =
   | { type: "single"; photo: LightPhoto }
   | { type: "diptych"; photos: [LightPhoto, LightPhoto] };
 
-function buildSlides(photos: LightPhoto[]): Slide[] {
+function buildSlides(photos: LightPhoto[], forceSingle = false): Slide[] {
   const slides: Slide[] = [];
   let i = 0;
+
+  // Mobile-only (Reshma, 2026-10-21: "the images should go like single
+  // images and not dyptich") — every photo gets its own slide, never
+  // paired side by side. Desktop keeps the diptych pairing below.
+  if (forceSingle) {
+    return photos.map((photo) => ({ type: "single", photo }));
+  }
 
   // Once every photo's orientation is tagged, pair up consecutive
   // verticals into diptychs and let horizontals stand alone — this is
@@ -94,7 +101,21 @@ export default function StorySlideshow({
    * slide if the id is not found (or not given). */
   initialPhotoId?: string;
 }) {
-  const slides = buildSlides(photos);
+  // Below `lg`, every photo is its own slide instead of being paired into
+  // a diptych (Reshma, 2026-10-21, mobile-only). Starts false so the
+  // server-rendered and first-paint markup match (same pattern as the
+  // mobile-home-link check in LightNav.tsx), then flips after mount once
+  // the real viewport is known.
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const query = window.matchMedia("(max-width: 1023px)");
+    setIsMobile(query.matches);
+    const handleChange = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    query.addEventListener("change", handleChange);
+    return () => query.removeEventListener("change", handleChange);
+  }, []);
+
+  const slides = buildSlides(photos, isMobile);
   const [index, setIndex] = useState(() => {
     if (!initialPhotoId) return 0;
     const found = slides.findIndex((slide) =>
