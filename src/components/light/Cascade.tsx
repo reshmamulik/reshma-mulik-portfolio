@@ -287,7 +287,7 @@ export default function Cascade({ photos, slideshowPhotos }: { photos: LightPhot
           which doesn't translate to a touch swipe gesture). Native
           scroll-snap plus explicit momentum/overscroll handling keeps the
           swipe itself smooth without any JS driving it. Sits underneath
-          the fixed 4-corner nav from MobileHomeNav.tsx. */}
+          the fixed mobile nav rendered by LightNav.tsx. */}
       <div className="flex h-screen snap-x snap-mandatory items-center gap-3 overflow-x-auto overscroll-x-contain px-4 [-webkit-overflow-scrolling:touch] lg:hidden">
         {photos.map((photo, i) => (
           <div key={photo.id} className="relative h-[60vh] aspect-[3/4] shrink-0 snap-center">

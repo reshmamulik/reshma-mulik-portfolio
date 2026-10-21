@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
 
 const ACCENT_HOVER = "hover:text-[#ff3b5c]";
 const DEFAULT_BAR_COLOR = "#f5f5dc";
@@ -42,31 +41,12 @@ export default function LightNav({
    * a `var(--...)` reference). Recent Work pages pass their own page color
    * here — 2026-10-13: Reshma wants the bar to match whatever background
    * is actually behind the nav there, not the site's usual off-white.
-   * Defaults to that off-white everywhere else. */
+   * Defaults to that off-white everywhere else. Desktop only — see the
+   * mobile nav block below. */
   barColor?: string;
 }) {
   const pathname = usePathname();
   const inactiveColor = variant === "dark" ? "text-white" : "text-black";
-
-  // On mobile, "Reshma Mulik" goes to the Overview page instead of the
-  // home page (Reshma, 2026-10-16: "Instead of home page connect overview
-  // page to reshma mulik" — mobile-only, site-wide, since the home page's
-  // mobile layout becomes a plain nav screen with no photos of its own,
-  // see src/app/page.tsx). Starts false (desktop) so server-rendered and
-  // first-paint markup match; flips after mount once we know the real
-  // viewport, same `lg` breakpoint Recent Work's layout already uses.
-  const [isMobileHome, setIsMobileHome] = useState(false);
-  useEffect(() => {
-    const query = window.matchMedia("(max-width: 1023px)");
-    setIsMobileHome(query.matches);
-    const handleChange = (e: MediaQueryListEvent) => setIsMobileHome(e.matches);
-    query.addEventListener("change", handleChange);
-    return () => query.removeEventListener("change", handleChange);
-  }, []);
-
-  function hrefFor(href: string) {
-    return href === "/" && isMobileHome ? "/overview" : href;
-  }
 
   // Clicking "Recent Work" while already on /projects: Next.js treats a
   // <Link> to the route you're already on as a no-op, so the page's own
@@ -116,12 +96,29 @@ export default function LightNav({
   const navEl = (
     <nav className="absolute inset-x-1 top-1 z-10 flex items-baseline justify-between text-xs font-medium uppercase tracking-[0.15em] sm:inset-x-4 sm:top-4 sm:text-sm lg:inset-x-6 lg:top-5">
       {NAV_LINKS.map(({ href, label, scroll }) => (
-        <Link key={href} href={hrefFor(href)} scroll={scroll} onClick={handleNavClick(href)} className={linkClass}>
+        <Link key={href} href={href} scroll={scroll} onClick={handleNavClick(href)} className={linkClass}>
           {label}
         </Link>
       ))}
     </nav>
   );
+
+  // Mobile nav (below lg): a plain two-column stack instead of the
+  // desktop single-row nav — "Reshma Mulik" / "Overview" top-left,
+  // "Recent Work" / "About" top-right (Reshma, 2026-10-21: "keep the
+  // menu layout like this for all pages" — this used to be a home-page-
+  // only component (MobileHomeNav.tsx) but she wants it site-wide, so
+  // it lives here now and every page that renders LightNav gets it for
+  // free). No hover-reveal backing (nothing to hover on a touch device):
+  // the words just sit directly on the page's own background, same as
+  // in her reference screenshot. "Reshma Mulik" goes home here too, same
+  // as desktop (Reshma, 2026-10-21: "when clicked on Reshma Mulik it
+  // should come back to landing page as the website on laptop" — this
+  // replaces an earlier 2026-10-16 mobile-only override that pointed it
+  // at Overview instead; Overview has its own stacked link now, so that
+  // override is gone).
+  const mobileLinkClass = `inline-block px-3 py-2 -mx-3 -my-2 text-xs font-medium uppercase tracking-[0.15em] transition sm:text-sm ${ACCENT_HOVER} ${inactiveColor}`;
+  const [reshmaMulik, recentWork, overview, about] = NAV_LINKS;
 
   return (
     <>
@@ -139,23 +136,48 @@ export default function LightNav({
           translucency) — multiplying together rather than overwriting.
           The whole band is one hoverable wrapper (not just the words) so
           hovering between links still triggers it; the bar sits behind
-          `nav`, which stays on top so the links are always clickable. */}
-      {effectiveBarColor ? (
-        <div className="group fixed inset-x-0 top-0 z-30 h-12 sm:h-16 lg:h-20">
-          <div className="absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
-            <div className="absolute inset-0 opacity-70" style={{ backgroundColor: effectiveBarColor }} />
+          `nav`, which stays on top so the links are always clickable.
+          Desktop only (lg+) — the mobile stack below replaces this. */}
+      <div className="hidden lg:contents">
+        {effectiveBarColor ? (
+          <div className="group fixed inset-x-0 top-0 z-30 h-12 sm:h-16 lg:h-20">
+            <div className="absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+              <div className="absolute inset-0 opacity-70" style={{ backgroundColor: effectiveBarColor }} />
+            </div>
+            {navEl}
           </div>
-          {navEl}
-        </div>
-      ) : (
-        <nav className="fixed inset-x-1 top-1 z-40 flex items-baseline justify-between text-xs font-medium uppercase tracking-[0.15em] sm:inset-x-4 sm:top-4 sm:text-sm lg:inset-x-6 lg:top-5">
-          {NAV_LINKS.map(({ href, label, scroll }) => (
-            <Link key={href} href={hrefFor(href)} scroll={scroll} onClick={handleNavClick(href)} className={linkClass}>
-              {label}
-            </Link>
-          ))}
-        </nav>
-      )}
+        ) : (
+          <nav className="fixed inset-x-1 top-1 z-40 flex items-baseline justify-between text-xs font-medium uppercase tracking-[0.15em] sm:inset-x-4 sm:top-4 sm:text-sm lg:inset-x-6 lg:top-5">
+            {NAV_LINKS.map(({ href, label, scroll }) => (
+              <Link key={href} href={href} scroll={scroll} onClick={handleNavClick(href)} className={linkClass}>
+                {label}
+              </Link>
+            ))}
+          </nav>
+        )}
+      </div>
+
+      <div className="fixed left-1 top-1 z-40 flex flex-col items-start gap-3 sm:left-4 sm:top-4 lg:hidden">
+        <Link href={reshmaMulik.href} onClick={handleNavClick(reshmaMulik.href)} className={mobileLinkClass}>
+          {reshmaMulik.label}
+        </Link>
+        <Link href={overview.href} onClick={handleNavClick(overview.href)} className={mobileLinkClass}>
+          {overview.label}
+        </Link>
+      </div>
+      <div className="fixed right-1 top-1 z-40 flex flex-col items-end gap-3 sm:right-4 sm:top-4 lg:hidden">
+        <Link
+          href={recentWork.href}
+          scroll={recentWork.scroll}
+          onClick={handleNavClick(recentWork.href)}
+          className={mobileLinkClass}
+        >
+          {recentWork.label}
+        </Link>
+        <Link href={about.href} onClick={handleNavClick(about.href)} className={mobileLinkClass}>
+          {about.label}
+        </Link>
+      </div>
 
       {backHref ? (
         <Link
