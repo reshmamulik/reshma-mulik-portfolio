@@ -3,7 +3,7 @@
 import FadeImage from "@/components/light/FadeImage";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { motion, useScroll, useTransform, easeInOut, type MotionValue } from "framer-motion";
+import { motion, useScroll, useTransform, useMotionValueEvent, easeInOut, type MotionValue } from "framer-motion";
 import type { LightPhoto } from "@/data/light";
 
 // The starting, evenly-spaced gap between images before the scroll
@@ -85,13 +85,25 @@ const HOVER_CLASS = "transition-opacity duration-200 hover:opacity-80";
 // once here so every place CascadeTile is used — the main cascade, the
 // first tile, the mobile snap row, and each photo inside the auto-cycling
 // slideshow slot — gets it for free.
-function CascadeTile({ photo, hoverable = true }: { photo: LightPhoto; hoverable?: boolean }) {
+function CascadeTile({
+  photo,
+  hoverable = true,
+  priority = false,
+}: {
+  photo: LightPhoto;
+  hoverable?: boolean;
+  /** Only the very first home-page tile (visible on load, before any
+   * scroll or swipe) sets this — a small, targeted piece of the "images
+   * loading slower" fix (Reshma, 2026-10-28). */
+  priority?: boolean;
+}) {
   const content = photo.src ? (
     <FadeImage
       src={photo.src}
       alt={photo.alt}
       fill
       sizes="30vw"
+      priority={priority}
       className={`object-cover ${hoverable ? HOVER_CLASS : ""}`}
     />
   ) : (
@@ -124,8 +136,9 @@ function CascadeTile({ photo, hoverable = true }: { photo: LightPhoto; hoverable
 }
 
 // How long each slide holds before the final cascade slot cross-fades to
-// the next one.
-const SLIDESHOW_INTERVAL_MS = 3000;
+// the next one. 20% faster than the original 3000ms (Reshma, 2026-10-28:
+// "images change slowly - increase that by 20%").
+const SLIDESHOW_INTERVAL_MS = 2400;
 
 // The final cascade slot: instead of one static image, auto-advances
 // through a small set of photos, cross-fading between them.
@@ -178,9 +191,33 @@ function CascadeCard({ photo, zIndex, restX, entryX, segment, tileWidth, tileHei
   );
 }
 
+// A small bouncing "scroll" hint on the right side of the home page
+// (Reshma, 2026-10-28: "add an arrow at right side which indicates people
+// to scroll... many people do not even know there's a scroll"). Fades out
+// for good the moment the visitor actually moves through the cascade —
+// on desktop that's real page scroll (scrollYProgress, below), on mobile
+// it's the swipe row's own scrollLeft (passed in from the mobile markup).
+function ScrollHint({ dismissed }: { dismissed: boolean }) {
+  return (
+    <div
+      aria-hidden="true"
+      className={`pointer-events-none fixed bottom-10 right-4 z-20 flex flex-col items-center gap-1 text-black/50 transition-opacity duration-500 sm:bottom-12 sm:right-6 lg:right-10 ${
+        dismissed ? "opacity-0" : "opacity-100"
+      }`}
+    >
+      <span className="text-[10px] font-medium uppercase tracking-[0.2em]">Scroll</span>
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" className="animate-bounce">
+        <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    </div>
+  );
+}
+
 export default function Cascade({ photos, slideshowPhotos }: { photos: LightPhoto[]; slideshowPhotos?: LightPhoto[] }) {
   const sectionRef = useRef<HTMLDivElement>(null);
+  const mobileRowRef = useRef<HTMLDivElement>(null);
   const [viewport, setViewport] = useState({ width: 1200, height: 800 });
+  const [hintDismissed, setHintDismissed] = useState(false);
 
   useEffect(() => {
     function measure() {
@@ -192,6 +229,63 @@ export default function Cascade({ photos, slideshowPhotos }: { photos: LightPhot
   }, []);
 
   const { scrollYProgress } = useScroll({ target: sectionRef, offset: ["start start", "end end"] });
+
+  // Dismiss the scroll hint the first real moment either axis actually
+  // moves the cascade (desktop: vertical page scroll past a hair of
+  // progress; mobile: the swipe row's own horizontal scroll — wired up on
+  // that row's onScroll below).
+  useMotionValueEvent(scrollYProgress, "change", (latest) => {
+    if (latest > 0.01) setHintDismissed(true);
+  });
+
+  // Desktop (Reshma, 2026-10-28: "it should move both vertically and
+  // horizontally - people can swipe left right to move it or up down as
+  // it is right now"): a horizontal trackpad swipe sends wheel events
+  // with deltaX instead of deltaY. Nothing on this page normally scrolls
+  // horizontally, so by default that gesture does nothing at all — this
+  // redirects a horizontal-dominant wheel event into the same vertical
+  // window scroll a two-finger up/down swipe already drives, so either
+  // direction moves the cascade. Needs a real (non-passive) listener so
+  // preventDefault can stop the browser from doing anything else with it.
+  useEffect(() => {
+    function onWheel(e: WheelEvent) {
+      if (Math.abs(e.deltaX) <= Math.abs(e.deltaY)) return;
+      e.preventDefault();
+      window.scrollBy(0, e.deltaX);
+    }
+    window.addEventListener("wheel", onWheel, { passive: false });
+    return () => window.removeEventListener("wheel", onWheel);
+  }, []);
+
+  // Mobile: the swipe row is natively horizontal-only (overflow-x-auto),
+  // so an up/down drag — the gesture most people try first, since that's
+  // every other scrollable page on this site — currently does nothing at
+  // all (Reshma, 2026-10-28: "The scroll is not working - make sure the
+  // scroll animation works perfectly for horizontal and vertical too").
+  // Same threshold-swipe pattern already used for Recent Work's slides:
+  // a vertical swipe past SWIPE_THRESHOLD_PX steps the row by one card
+  // width, in whichever direction the swipe went; a horizontal swipe is
+  // left alone so the native scroll-snap handles it as before.
+  const mobileTouchStartRef = useRef<{ x: number; y: number } | null>(null);
+  const SWIPE_THRESHOLD_PX = 40;
+  function handleMobileTouchStart(e: React.TouchEvent) {
+    const touch = e.touches[0];
+    mobileTouchStartRef.current = { x: touch.clientX, y: touch.clientY };
+  }
+  function handleMobileTouchEnd(e: React.TouchEvent) {
+    const start = mobileTouchStartRef.current;
+    mobileTouchStartRef.current = null;
+    if (!start) return;
+    const touch = e.changedTouches[0];
+    const dx = touch.clientX - start.x;
+    const dy = touch.clientY - start.y;
+    if (Math.abs(dy) < SWIPE_THRESHOLD_PX || Math.abs(dy) < Math.abs(dx)) return;
+    const row = mobileRowRef.current;
+    if (!row) return;
+    const card = row.querySelector<HTMLElement>("[data-cascade-card]");
+    const step = card ? card.getBoundingClientRect().width + 12 : row.clientWidth * 0.8;
+    row.scrollBy({ left: dy < 0 ? step : -step, behavior: "smooth" });
+  }
 
   const sideMargin = sideMarginFor(viewport.width);
   const availableWidth = Math.max(viewport.width - sideMargin * 2, 200);
@@ -244,10 +338,16 @@ export default function Cascade({ photos, slideshowPhotos }: { photos: LightPhot
     }
   }
 
-  const sectionHeightVh = 100 + 60 * numMoving;
+  // Shortened from 100 + 60 * numMoving (Reshma, 2026-10-28: "people have
+  // to scroll a lot to move - can it be faster so won't have to be a long
+  // scroll") — roughly 40% less scroll distance per image while still
+  // giving each one room to animate in.
+  const sectionHeightVh = 100 + 36 * numMoving;
 
   return (
     <>
+      <ScrollHint dismissed={hintDismissed} />
+
       {/* Desktop-only full cascade (Reshma, 2026-10-16/21: the `lg` cutoff
           the rest of the mobile work this session uses, not the old `sm`
           one — below `lg` the simple swipe row right below takes over
@@ -258,7 +358,7 @@ export default function Cascade({ photos, slideshowPhotos }: { photos: LightPhot
             {photos.map((photo, i) =>
               i === 0 ? (
                 <div key={photo.id} style={{ zIndex: 1, width: tileWidth, height: tileHeight }} className={TILE_CLASS}>
-                  <CascadeTile photo={photo} hoverable={i !== photos.length - 1} />
+                  <CascadeTile photo={photo} hoverable={i !== photos.length - 1} priority />
                 </div>
               ) : (
                 <CascadeCard
@@ -288,13 +388,21 @@ export default function Cascade({ photos, slideshowPhotos }: { photos: LightPhot
           scroll-snap plus explicit momentum/overscroll handling keeps the
           swipe itself smooth without any JS driving it. Sits underneath
           the fixed mobile nav rendered by LightNav.tsx. */}
-      <div className="flex h-screen snap-x snap-mandatory items-center gap-3 overflow-x-auto overscroll-x-contain px-4 [-webkit-overflow-scrolling:touch] lg:hidden">
+      <div
+        ref={mobileRowRef}
+        onScroll={(e) => {
+          if (e.currentTarget.scrollLeft > 10) setHintDismissed(true);
+        }}
+        onTouchStart={handleMobileTouchStart}
+        onTouchEnd={handleMobileTouchEnd}
+        className="flex h-screen snap-x snap-mandatory items-center gap-3 overflow-x-auto overscroll-x-contain px-4 [-webkit-overflow-scrolling:touch] lg:hidden"
+      >
         {photos.map((photo, i) => (
-          <div key={photo.id} className="relative h-[60vh] aspect-[3/4] shrink-0 snap-center">
+          <div key={photo.id} data-cascade-card className="relative h-[60vh] aspect-[3/4] shrink-0 snap-center">
             {i === photos.length - 1 && slideshowPhotos && slideshowPhotos.length > 0 ? (
               <CascadeSlideshowTile photos={slideshowPhotos} />
             ) : (
-              <CascadeTile photo={photo} hoverable={i !== photos.length - 1} />
+              <CascadeTile photo={photo} hoverable={i !== photos.length - 1} priority={i === 0} />
             )}
           </div>
         ))}

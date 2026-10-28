@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import FadeImage from "@/components/light/FadeImage";
+import photoColors from "@/data/photo-colors.generated.json";
 import type { LightPhoto } from "@/data/light";
 
 // A slide is either one horizontal (5x7-ish) photo, or a diptych of two
@@ -58,17 +59,40 @@ function buildSlides(photos: LightPhoto[], forceSingle = false): Slide[] {
   return slides;
 }
 
-function PhotoTile({ photo, fit = "cover" }: { photo: LightPhoto; fit?: "cover" | "contain" }) {
-  // Wrapped in its own gradient-filled box (the same placeholderFrom/To
-  // used for a missing photo) instead of handing FadeImage a bare parent,
-  // so a cold-loading image has something to fade in OVER rather than a
-  // blank gap the size of the frame — on a slow/first load that blank gap
-  // sat there long enough to read as broken (Reshma, 2026-10-15: "when i
-  // start scrolling first sec on recent work - there is some glitch" /
-  // confirmed it was the Ongoing photo staying blank before it faded in).
+const colorLookup = photoColors as Record<string, string>;
+
+function PhotoTile({
+  photo,
+  fit = "cover",
+  priority = false,
+}: {
+  photo: LightPhoto;
+  fit?: "cover" | "contain";
+  /** Hints this is the image shown on initial page load (only ever the
+   * first row's opening slide, which Recent Work scrolls to immediately
+   * on mount) so Next preloads it instead of lazy-loading like every
+   * other slide — a small, targeted piece of the "images loading slower"
+   * fix (Reshma, 2026-10-28). */
+  priority?: boolean;
+}) {
+  // Wrapped in its own color-filled box instead of handing FadeImage a
+  // bare parent, so a cold-loading image has something to fade in OVER
+  // rather than a blank gap the size of the frame (Reshma, 2026-10-15:
+  // "when i start scrolling first sec on recent work - there is some
+  // glitch"). The fill color comes from the photo's OWN average color
+  // (scripts/generate-photo-colors.mjs, committed as
+  // photo-colors.generated.json) rather than one gradient shared across
+  // every photo in the story (Reshma, 2026-10-28: "can the preview be
+  // like colors of images used instead of the color of the background")
+  // — falls back to the old shared gradient for a placeholder photo with
+  // no src (and so no generated color).
+  const bgColor = photo.src ? colorLookup[photo.src] : undefined;
   return (
     <div
-      className={`relative h-full w-full overflow-hidden bg-gradient-to-br ${photo.placeholderFrom} ${photo.placeholderTo}`}
+      className={`relative h-full w-full overflow-hidden ${
+        bgColor ? "" : `bg-gradient-to-br ${photo.placeholderFrom} ${photo.placeholderTo}`
+      }`}
+      style={bgColor ? { backgroundColor: bgColor } : undefined}
     >
       {photo.src ? (
         <FadeImage
@@ -76,6 +100,7 @@ function PhotoTile({ photo, fit = "cover" }: { photo: LightPhoto; fit?: "cover" 
           alt={photo.alt}
           fill
           sizes="60vw"
+          priority={priority}
           className={fit === "contain" ? "object-contain" : "object-cover"}
           style={photo.objectPosition ? { objectPosition: photo.objectPosition } : undefined}
         />
@@ -88,9 +113,25 @@ function PhotoTile({ photo, fit = "cover" }: { photo: LightPhoto; fit?: "cover" 
   );
 }
 
+// A small left/right chevron, used for both the fixed side arrows below.
+function ChevronIcon({ direction }: { direction: "left" | "right" }) {
+  return (
+    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" aria-hidden="true">
+      <path
+        d={direction === "left" ? "M15 5l-7 7 7 7" : "M9 5l7 7-7 7"}
+        stroke="currentColor"
+        strokeWidth={1.75}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 export default function StorySlideshow({
   photos,
   initialPhotoId,
+  priority = false,
 }: {
   photos: LightPhoto[];
   /** Opens the slideshow already on the slide containing this photo id,
@@ -100,6 +141,9 @@ export default function StorySlideshow({
    * clicked rather than making her hunt for it. Falls back to the first
    * slide if the id is not found (or not given). */
   initialPhotoId?: string;
+  /** Only ever set on the one row Recent Work lands on by default
+   * (Ongoing) — see the doc on PhotoTile's own priority prop. */
+  priority?: boolean;
 }) {
   // Below `lg`, every photo is its own slide instead of being paired into
   // a diptych (Reshma, 2026-10-21, mobile-only). Starts false so the
@@ -126,6 +170,22 @@ export default function StorySlideshow({
     return found === -1 ? 0 : found;
   });
   const current = slides[index];
+
+  // Mobile-only (Reshma, 2026-10-28: "keep a fix space what's needed for
+  // largest vertical image and place the horizontal image at the center
+  // of it when viewing instead of changing the layout everytime") — a
+  // single box shape reused for every slide in this row, sized to the
+  // TALLEST (most vertical, i.e. smallest width/height) photo among them,
+  // instead of each slide resizing the box to its own ratio. object-contain
+  // then centers a wider/horizontal photo inside that fixed tall box
+  // rather than the box itself changing shape. Desktop is unaffected — it
+  // keeps sizing each slide's box to that slide's own real ratio.
+  const mobileBoxAspect = useMemo(() => {
+    const ratios = photos
+      .filter((p): p is LightPhoto & { width: number; height: number } => Boolean(p.width && p.height))
+      .map((p) => p.width / p.height);
+    return ratios.length > 0 ? Math.min(...ratios) : undefined;
+  }, [photos]);
 
   function goPrev() {
     setIndex((i) => (i - 1 + slides.length) % slides.length);
@@ -165,17 +225,13 @@ export default function StorySlideshow({
   if (!current) return null;
 
   return (
-    // No visible prev/next buttons — same treatment as the Overview
-    // single-photo page (Reshma, 2026-10-13 there: "wanted the prev/next
-    // arrows replaced by a cursor hint instead"; 2026-10-16 here: "remove
-    // current arrows from recent work and use the arrow from overview to
-    // recent work"). The click zones (and the cursor hint) span this
-    // whole outer area — the full column, not just the photo's own
-    // pixels — same as Overview's full-page click zones (Reshma,
-    // 2026-10-16: "if you see overview for full page the cursor acts as
-    // an arrow, do the same for recent work"), so the dead space beside a
-    // narrower (e.g. portrait) photo still steps the slideshow instead of
-    // only the image itself responding.
+    // No visible prev/next buttons here used to be the whole story
+    // (Reshma, 2026-10-13/16) — the full-column invisible click zones
+    // with the cursor hint are still exactly that. But she also wants a
+    // visible, always-there option now (2026-10-28: "Add arrows alongside
+    // the photos on sides fixed. Keep the hovering arrow too, so people
+    // have option") — the fixed left/right chevrons below sit on top of
+    // (and inside) those same invisible zones, so either one works.
     <div
       className="relative mx-auto flex w-full max-w-[90rem] items-center justify-center lg:h-[calc(100vh-11rem)]"
       onTouchStart={handleTouchStart}
@@ -209,24 +265,43 @@ export default function StorySlideshow({
           instead of width solves #2 — the box can never be taller than
           the screen — and also keeps the row's height constant across
           slides (so the arrows still don't drift), since it no longer
-          depends on which photo's ratio is showing. */}
+          depends on which photo's ratio is showing.
+
+          Below lg, the box now uses one fixed ratio (mobileBoxAspect,
+          the row's own tallest photo) for every slide instead — see the
+          comment on mobileBoxAspect above. */}
       <div
         className="relative aspect-[7/5] w-full lg:h-full lg:w-auto"
         style={
-          current.type === "single" && current.photo.width && current.photo.height
-            ? { aspectRatio: `${current.photo.width} / ${current.photo.height}` }
-            : undefined
+          isMobile
+            ? mobileBoxAspect
+              ? { aspectRatio: `${mobileBoxAspect}` }
+              : undefined
+            : current.type === "single" && current.photo.width && current.photo.height
+              ? { aspectRatio: `${current.photo.width} / ${current.photo.height}` }
+              : undefined
         }
       >
         {current.type === "single" ? (
-          <PhotoTile photo={current.photo} fit="contain" />
+          // Keyed by photo id so switching slides mounts a fresh FadeImage
+          // instead of reusing the old one in place — without this, the
+          // previous photo's already-loaded <img> stayed visible (fully
+          // opaque, stretched into the new slide's box) until the new
+          // image finished loading, since FadeImage's own "loaded" state
+          // only resets on mount, not on a changed src. That's what read
+          // as a leftover color block / wrong-ratio border from the prior
+          // slide (Reshma, 2026-10-28: "if a vertical image comes after
+          // horizontal it loads as horizontal color block..."). Keying
+          // forces a clean remount, so the new slide's own placeholder
+          // color shows immediately in its own correctly-shaped box.
+          <PhotoTile key={current.photo.id} photo={current.photo} fit="contain" priority={priority} />
         ) : (
           <div className="flex h-full w-full gap-3 sm:gap-4">
             <div className="relative h-full flex-1">
-              <PhotoTile photo={current.photos[0]} />
+              <PhotoTile key={current.photos[0].id} photo={current.photos[0]} />
             </div>
             <div className="relative h-full flex-1">
-              <PhotoTile photo={current.photos[1]} />
+              <PhotoTile key={current.photos[1].id} photo={current.photos[1]} />
             </div>
           </div>
         )}
@@ -244,6 +319,26 @@ export default function StorySlideshow({
         aria-label="Next"
         className="absolute inset-y-0 right-0 z-20 w-1/2 cursor-ew-resize outline-none"
       />
+
+      {/* Visible fixed arrows, alongside the invisible full-half click
+          zones above (Reshma, 2026-10-28). z-30 so they sit clickable on
+          top of those zones rather than just decorating them. */}
+      <button
+        type="button"
+        onClick={goPrev}
+        aria-label="Previous photo"
+        className="absolute left-2 top-1/2 z-30 -translate-y-1/2 rounded-full p-2 text-black/50 transition hover:text-black sm:left-4"
+      >
+        <ChevronIcon direction="left" />
+      </button>
+      <button
+        type="button"
+        onClick={goNext}
+        aria-label="Next photo"
+        className="absolute right-2 top-1/2 z-30 -translate-y-1/2 rounded-full p-2 text-black/50 transition hover:text-black sm:right-4"
+      >
+        <ChevronIcon direction="right" />
+      </button>
     </div>
   );
 }

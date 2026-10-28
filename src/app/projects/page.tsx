@@ -101,12 +101,16 @@ function ProjectRow({
   row,
   clone = false,
   initialPhotoId,
+  priority = false,
 }: {
   row: Row;
   clone?: boolean;
   /** Passed through to this row’s StorySlideshow — see its own prop doc.
    * Only ever set on the one real row a home-page cascade link points at. */
   initialPhotoId?: string;
+  /** Passed through to StorySlideshow — only ever set on the first real
+   * row (Ongoing), the one Recent Work lands on by default. */
+  priority?: boolean;
 }) {
   return (
     <section
@@ -178,7 +182,7 @@ function ProjectRow({
           section above (not padding here) is what spaces this block from
           the title/essay above it when stacked. */}
       <div className="self-center px-6 sm:px-8 lg:col-span-2 lg:px-0 lg:pr-4">
-        <StorySlideshow photos={row.photos} initialPhotoId={initialPhotoId} />
+        <StorySlideshow photos={row.photos} initialPhotoId={initialPhotoId} priority={priority} />
       </div>
     </section>
   );
@@ -233,7 +237,7 @@ function ProjectsPageInner() {
         '[data-project-section][data-row-key="' + targetRowKey + '"]',
       );
       if (target) {
-        window.scrollTo(0, docTop(target as HTMLElement));
+        window.scrollTo({ top: docTop(target as HTMLElement), behavior: "instant" });
         return;
       }
     }
@@ -253,7 +257,7 @@ function ProjectsPageInner() {
     // exactly on it, same as the Recent Work nav link already does.
     const ongoingSection = content.querySelector("[data-project-section]");
     if (ongoingSection) {
-      window.scrollTo(0, docTop(ongoingSection as HTMLElement));
+      window.scrollTo({ top: docTop(ongoingSection as HTMLElement), behavior: "instant" });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -290,6 +294,15 @@ function ProjectsPageInner() {
     //    round"). The debounce alone is enough to stop the wrap from
     //    fighting a live gesture, so there's no buffer here any more —
     //    just the real edges, checked only once scrolling is at rest.
+    // 3. Mobile Safari (and some Android browsers) resize the visual
+    //    viewport as the address bar collapses or reappears DURING a
+    //    scroll gesture, which can leave window.scrollY sitting past an
+    //    edge without ever firing enough further 'scroll' events for the
+    //    debounce below to settle on — the loop would just quietly stop
+    //    correcting there (Reshma, 2026-10-28: "Infinite scroll isn't
+    //    working on phone"). A 'resize' listener, debounced the same way,
+    //    is a second path to the same check so a settled-but-uncorrected
+    //    position still gets fixed once the viewport stops changing.
     let settleTimer: ReturnType<typeof setTimeout> | null = null;
 
     function correctIfNeeded() {
@@ -301,20 +314,22 @@ function ProjectsPageInner() {
       const loopHeight = endCloneTop - contentTop;
       if (loopHeight <= 0) return;
       if (window.scrollY >= endCloneTop) {
-        window.scrollTo(0, window.scrollY - loopHeight);
+        window.scrollTo({ top: window.scrollY - loopHeight, behavior: "instant" });
       } else if (window.scrollY < contentTop) {
-        window.scrollTo(0, window.scrollY + loopHeight);
+        window.scrollTo({ top: window.scrollY + loopHeight, behavior: "instant" });
       }
     }
 
-    function onScroll() {
+    function scheduleCheck() {
       if (settleTimer) clearTimeout(settleTimer);
       settleTimer = setTimeout(correctIfNeeded, 150);
     }
 
-    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("scroll", scheduleCheck, { passive: true });
+    window.addEventListener("resize", scheduleCheck, { passive: true });
     return () => {
-      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("scroll", scheduleCheck);
+      window.removeEventListener("resize", scheduleCheck);
       if (settleTimer) clearTimeout(settleTimer);
     };
   }, []);
@@ -348,11 +363,12 @@ function ProjectsPageInner() {
             clearance space — see the comment on ProjectRow above for why
             it lives here instead of on the row itself. */}
         <div ref={contentRef} className="pt-[88px] lg:pt-20">
-          {rows.map((row) => (
+          {rows.map((row, i) => (
             <ProjectRow
               key={row.key}
               row={row}
               initialPhotoId={row.key === targetRowKey ? (targetPhotoId ?? undefined) : undefined}
+              priority={i === 0}
             />
           ))}
         </div>
