@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import FadeImage from "@/components/light/FadeImage";
 import photoColors from "@/data/photo-colors.generated.json";
 import type { LightPhoto } from "@/data/light";
@@ -171,22 +171,6 @@ export default function StorySlideshow({
   });
   const current = slides[index];
 
-  // Mobile-only (Reshma, 2026-10-28: "keep a fix space what's needed for
-  // largest vertical image and place the horizontal image at the center
-  // of it when viewing instead of changing the layout everytime") — a
-  // single box shape reused for every slide in this row, sized to the
-  // TALLEST (most vertical, i.e. smallest width/height) photo among them,
-  // instead of each slide resizing the box to its own ratio. object-contain
-  // then centers a wider/horizontal photo inside that fixed tall box
-  // rather than the box itself changing shape. Desktop is unaffected — it
-  // keeps sizing each slide's box to that slide's own real ratio.
-  const mobileBoxAspect = useMemo(() => {
-    const ratios = photos
-      .filter((p): p is LightPhoto & { width: number; height: number } => Boolean(p.width && p.height))
-      .map((p) => p.width / p.height);
-    return ratios.length > 0 ? Math.min(...ratios) : undefined;
-  }, [photos]);
-
   function goPrev() {
     setIndex((i) => (i - 1 + slides.length) % slides.length);
   }
@@ -227,16 +211,38 @@ export default function StorySlideshow({
   return (
     // No visible prev/next buttons here used to be the whole story
     // (Reshma, 2026-10-13/16) — the full-column invisible click zones
-    // with the cursor hint are still exactly that. But she also wants a
-    // visible, always-there option now (2026-10-28: "Add arrows alongside
-    // the photos on sides fixed. Keep the hovering arrow too, so people
-    // have option") — the fixed left/right chevrons below sit on top of
-    // (and inside) those same invisible zones, so either one works.
+    // with the cursor hint are still exactly that. She also wants a
+    // visible, always-there option too (2026-10-28: "Add arrows
+    // alongside the photos on sides fixed. Keep the hovering arrow too,
+    // so people have option") — but a first version placed those arrows
+    // at the outer edges of this whole centering row, so wherever the
+    // photo box itself ran close to those edges (full-bleed on mobile,
+    // or a wide box on desktop — "We Live In A Tank") they sat directly
+    // on top of the image instead of beside it (Reshma, phone
+    // screenshots: "the arrows shouldn't be on top of image"; then
+    // desktop screenshots: "on website chrome also this... arrow...
+    // problem is there specifically for... we live in a tank"). Making
+    // the arrows flex siblings of the photo box — instead of absolutely
+    // positioned against this outer row — gives them their own
+    // dedicated gutter beside the box no matter how wide it renders.
+    // Below lg there's no gutter to give them beside a full-width photo,
+    // so they're hidden there entirely; the invisible tap zones (now
+    // scoped to the box itself, see below) plus the touch-swipe handler
+    // above already cover mobile navigation.
     <div
-      className="relative mx-auto flex w-full max-w-[90rem] items-center justify-center lg:h-[calc(100vh-11rem)]"
+      className="relative mx-auto flex w-full max-w-[90rem] items-center justify-center gap-1 sm:gap-3 lg:h-[calc(100vh-11rem)] lg:gap-4"
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
     >
+      <button
+        type="button"
+        onClick={goPrev}
+        aria-label="Previous photo"
+        className="z-30 hidden shrink-0 rounded-full p-2 text-black/50 transition hover:text-black lg:flex"
+      >
+        <ChevronIcon direction="left" />
+      </button>
+
       {/* Below lg: same as always, full column width, height follows
           from aspect ratio — fine on a stacked mobile layout where the
           row can simply be taller than one screen.
@@ -267,19 +273,22 @@ export default function StorySlideshow({
           slides (so the arrows still don't drift), since it no longer
           depends on which photo's ratio is showing.
 
-          Below lg, the box now uses one fixed ratio (mobileBoxAspect,
-          the row's own tallest photo) for every slide instead — see the
-          comment on mobileBoxAspect above. */}
+          This used to switch to a single shared box ratio (the row's
+          tallest photo) below lg instead of each slide's own ratio
+          (Reshma, 2026-10-28: "keep a fix space what's needed for
+          largest vertical image..."), but a horizontal photo squeezed
+          into a box sized for the row's tallest vertical one left thick
+          bars of the new solid per-photo placeholder color down the
+          sides — her phone screenshots: "extra border". Reverted: every
+          slide, on every breakpoint, sizes the box to its OWN real
+          ratio again — the one thing that's fully eliminated the
+          placeholder-color border showing through anywhere. */}
       <div
         className="relative aspect-[7/5] w-full lg:h-full lg:w-auto"
         style={
-          isMobile
-            ? mobileBoxAspect
-              ? { aspectRatio: `${mobileBoxAspect}` }
-              : undefined
-            : current.type === "single" && current.photo.width && current.photo.height
-              ? { aspectRatio: `${current.photo.width} / ${current.photo.height}` }
-              : undefined
+          current.type === "single" && current.photo.width && current.photo.height
+            ? { aspectRatio: `${current.photo.width} / ${current.photo.height}` }
+            : undefined
         }
       >
         {current.type === "single" ? (
@@ -305,37 +314,30 @@ export default function StorySlideshow({
             </div>
           </div>
         )}
+
+        {/* Tap zones scoped to the box itself (not the outer row, which
+            now also has the visible arrow buttons as flex siblings on
+            either side of it) so clicking in that side gutter doesn't
+            also step the slideshow. */}
+        <button
+          type="button"
+          onClick={goPrev}
+          aria-label="Previous"
+          className="absolute inset-y-0 left-0 z-20 w-1/2 cursor-ew-resize outline-none"
+        />
+        <button
+          type="button"
+          onClick={goNext}
+          aria-label="Next"
+          className="absolute inset-y-0 right-0 z-20 w-1/2 cursor-ew-resize outline-none"
+        />
       </div>
 
       <button
         type="button"
-        onClick={goPrev}
-        aria-label="Previous"
-        className="absolute inset-y-0 left-0 z-20 w-1/2 cursor-ew-resize outline-none"
-      />
-      <button
-        type="button"
-        onClick={goNext}
-        aria-label="Next"
-        className="absolute inset-y-0 right-0 z-20 w-1/2 cursor-ew-resize outline-none"
-      />
-
-      {/* Visible fixed arrows, alongside the invisible full-half click
-          zones above (Reshma, 2026-10-28). z-30 so they sit clickable on
-          top of those zones rather than just decorating them. */}
-      <button
-        type="button"
-        onClick={goPrev}
-        aria-label="Previous photo"
-        className="absolute left-2 top-1/2 z-30 -translate-y-1/2 rounded-full p-2 text-black/50 transition hover:text-black sm:left-4"
-      >
-        <ChevronIcon direction="left" />
-      </button>
-      <button
-        type="button"
         onClick={goNext}
         aria-label="Next photo"
-        className="absolute right-2 top-1/2 z-30 -translate-y-1/2 rounded-full p-2 text-black/50 transition hover:text-black sm:right-4"
+        className="z-30 hidden shrink-0 rounded-full p-2 text-black/50 transition hover:text-black lg:flex"
       >
         <ChevronIcon direction="right" />
       </button>
